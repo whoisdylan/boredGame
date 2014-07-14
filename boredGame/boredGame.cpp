@@ -7,6 +7,9 @@
 
 using namespace std;
 
+class Board;
+class Player;
+
 enum direction {
 	up, down, left, right
 };
@@ -20,7 +23,7 @@ class Board {
 public:
 	vector< vector <int> > gameBoard;
 	void displayBoard();
-
+	bool move(Player &player, direction direction);
 };
 
 class Player {
@@ -29,7 +32,6 @@ public:
 	position pos;
 	bool isAlive;
 	direction getMove();
-	void move(direction direction);
 	bool attack();
 };
 
@@ -55,7 +57,7 @@ void initPlayers(vector<Player> &playerList, int numPlayers) {
 		return;
 		break;
 	default:
-		position playerPos = { 0, numPlayers };
+		position playerPos = { 0, numPlayers-1 };
 		Player newPlayer(playerPos);
 		playerList.push_back(newPlayer);
 		initPlayers(playerList,numPlayers - 1);
@@ -101,6 +103,73 @@ void Board::displayBoard() {
 	}
 }
 
+bool checkMoveBounds(position pos, direction moveDir) {
+	switch (moveDir) {
+	case direction::up:
+		if (pos.row > 0) {
+			return true;
+		}
+		else {
+			return false;
+		}
+		break;
+	case direction::down:
+		if (pos.row < 7) {
+			return true;
+		}
+		else {
+			return false;
+		}
+		break;
+	case direction::left:
+		if (pos.col > 0) {
+			return true;
+		}
+		else {
+			return false;
+		}
+		break;
+	case direction::right:
+		if (pos.col < 7) {
+			return true;
+		}
+		else {
+			return false;
+		}
+		break;
+	default:
+		return false;
+		break;
+	}
+
+}
+
+bool Board::move(Player &player, direction moveDir) {
+	if (checkMoveBounds(player.pos, moveDir)) {
+		(this->gameBoard.at(player.pos.row)).at(player.pos.col) = 0;
+		switch (moveDir) {
+		case direction::up:
+			player.pos = { player.pos.row - 1, player.pos.col };
+			break;
+		case direction::down:
+			player.pos = { player.pos.row + 1, player.pos.col };
+			break;
+		case direction::left:
+			player.pos = { player.pos.row, player.pos.col - 1 };
+			break;
+		case direction::right:
+			player.pos = { player.pos.row, player.pos.col + 1 };
+			break;
+		}
+		(this->gameBoard.at(player.pos.row)).at(player.pos.col) = 1;
+		return true;
+	}
+	else {
+		cout << "Can't move in that direction" << endl;
+		return false;
+	}
+}
+
 void playGame(Board &board, vector<Player> playerList, bool isGameOver, int playersTurn) {
 	if (isGameOver) {
 		cout << "Game over" << endl;
@@ -109,7 +178,14 @@ void playGame(Board &board, vector<Player> playerList, bool isGameOver, int play
 		Player currPlayer = playerList.at(playersTurn);
 		const direction playersMove = currPlayer.getMove();
 		cout << "player " << playersTurn << " moved " << playersMove << endl;
+		bool playerDidMove = board.move(currPlayer, playersMove);
+		if (!playerDidMove) {
+			playGame(board, playerList, false, playersTurn);
+			return;
+		}
+		board.displayBoard();
 		int nextPlayersTurn = playersTurn == 0 ? 1 : 0;
+		playerList.at(playersTurn) = currPlayer;
 		playGame(board, playerList, false, nextPlayersTurn);
 	}
 }
